@@ -57,8 +57,8 @@ fbfile="tvservice -s"
 #charging no load: 4.85V max (full bat)
 #charging es load: 4.5V max
 
-vmax = {"discharging": 3.4,
-        "charging"   : 4.5 }
+vmax = {"discharging": 3.9,
+        "charging"   : 5.15 }
 vmin = {"discharging": 2.8,
         "charging"   : 4.15 }
 icons = { "discharging": [ "alert_red", "alert", "20", "30", "30", "50", "60",
@@ -196,7 +196,7 @@ def environment():
   return val
 
 def battery():
-  global battery_level, overlay_processes, battery_history
+  global shutdownWarning, battery_level, overlay_processes, battery_history
   value = adc.read_adc(0, gain=2/3)
   value_v = value * 0.003
 

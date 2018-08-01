@@ -22,10 +22,10 @@ from statistics import median
 from collections import deque
 from enum import Enum
 
-pngview_path="/usr/local/bin/pngview"
-pngview_call=[pngview_path, "-d", "0", "-b", "0x0000", "-n", "-l", "15000", "-y", "0", "-x"]
+pngview_path="/home/pi/gbz_overlay/pngview/pngview"
+pngview_call=[pngview_path, "-d", "0", "-b", "0x0000", "-l", "15000", "-y", "0", "-x"]
 
-iconpath="/home/pi/src/material-design-icons-master/device/drawable-mdpi/"
+iconpath="/home/pi/material-design-icons-master/device/drawable-mdpi/"
 iconpath2 = os.path.dirname(os.path.realpath(__file__)) + "/overlay_icons/"
 logfile = os.path.dirname(os.path.realpath(__file__)) + "/overlay.log"
 dpi=36
@@ -57,16 +57,20 @@ fbfile="tvservice -s"
 #charging no load: 4.85V max (full bat)
 #charging es load: 4.5V max
 
-vmax = {"discharging": 3.95,
+vmax = {"discharging": 3.4,
         "charging"   : 4.5 }
-vmin = {"discharging": 3.2,
-        "charging"   : 4.25 }
+vmin = {"discharging": 2.8,
+        "charging"   : 4.15 }
 icons = { "discharging": [ "alert_red", "alert", "20", "30", "30", "50", "60",
                            "60", "80", "90", "full", "full" ],
           "charging"   : [ "charging_20", "charging_20", "charging_20",
                            "charging_30", "charging_30", "charging_50",
                            "charging_60", "charging_60", "charging_80",
                            "charging_90", "charging_full", "charging_full" ]}
+
+showBluetooth = False
+showWiFi = True
+shutdownWarning = False
 
 class InterfaceState(Enum):
   DISABLED = 0
@@ -202,12 +206,18 @@ def battery():
   except IndexError:
     level_icon="unknown"
 
+  if value_v > vmax["discharging"] and shutdownWarning == True:
+      shutdownWarning = False
 
-  if value_v <= 3.2:
-    my_logger.warn("Battery voltage at or below 3.2V. Initiating shutdown within 1 minute")
+  if value_v <= vmin["discharging"] and shutdownWarning == True:
+    my_logger.warn("Initiating shutdown")
+    os.system("sudo poweroff &")
 
+  if value_v <= vmin["discharging"]:
+    my_logger.warn("Battery voltage low. Initiating shutdown sequence - plug into power or system will shutdown in 1 minute")
+    shutdownWarning = True
     subprocess.Popen(pngview_call + [str(int(resolution[0]) / 2 - 64), "-y", str(int(resolution[1]) / 2 - 64), icon_battery_critical_shutdown])
-    os.system("sleep 60 && sudo poweroff &")
+    time.sleep(60)
 
   if level_icon != battery_level:
     if "bat" in overlay_processes:
@@ -239,16 +249,22 @@ my_logger.info(resolution)
 
 while True:
   (battery_level, value_v) = battery()
-  wifi_state = wifi()
-  bt_state = bluetooth()
+  wifi_name = "Disabled"
+  bt_name = "Disabled"
+  if showWiFi:
+      wifi_state = wifi()
+      wifi_name = wifi_state.name
+  if showBluetooth:
+      bt_state = bluetooth()
+      bt_name = bt_state.name
   env = environment()
   my_logger.info("%s,median: %.2f, %s,icon: %s,wifi: %s,bt: %s, throttle: %#0x" % (
     datetime.now(),
     value_v,
     list(battery_history),
     battery_level,
-    wifi_state.name,
-    bt_state.name,
+    wifi_name,
+    bt_name,
     env
   ))
   time.sleep(20)

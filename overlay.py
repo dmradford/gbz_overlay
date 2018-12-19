@@ -57,10 +57,11 @@ fbfile="tvservice -s"
 #charging no load: 4.85V max (full bat)
 #charging es load: 4.5V max
 
-vmax = {"discharging": 3.9,
-        "charging"   : 5.15 }
-vmin = {"discharging": 2.8,
-        "charging"   : 4.15 }
+vmax = {"discharging": 4.0,
+        "charging"   : 4.7 }
+vmin = {"discharging": 3.2,
+        "charging"   : 4.0 }
+
 icons = { "discharging": [ "alert_red", "alert", "20", "30", "30", "50", "60",
                            "60", "80", "90", "full", "full" ],
           "charging"   : [ "charging_20", "charging_20", "charging_20",
@@ -71,6 +72,7 @@ icons = { "discharging": [ "alert_red", "alert", "20", "30", "30", "50", "60",
 showBluetooth = False
 showWiFi = True
 shutdownWarning = False
+vscale = 1.0
 
 class InterfaceState(Enum):
   DISABLED = 0
@@ -198,7 +200,7 @@ def environment():
 def battery():
   global shutdownWarning, battery_level, overlay_processes, battery_history
   value = adc.read_adc(0, gain=2/3)
-  value_v = value * 0.003
+  value_v = (value * 0.003) * vscale
 
   battery_history.append(value_v)
   try:

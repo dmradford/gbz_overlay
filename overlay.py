@@ -11,7 +11,10 @@
 # - code comments. someday...
 
 import time
-import Adafruit_ADS1x15
+#import Adafruit_ADS1x15
+import board
+import busio
+import adafruit_ads1x15.ads1015 as ADS
 import subprocess
 import os
 import re
@@ -21,6 +24,9 @@ from datetime import datetime
 from statistics import median
 from collections import deque
 from enum import Enum
+from adafruit_ads1x15.analog_in import AnalogIn
+
+i2c = busio.I2C(board.SCL, board.SDA)
 
 pngview_path="/home/pi/gbz_overlay/pngview/pngview"
 pngview_call=[pngview_path, "-d", "0", "-b", "0x0000", "-l", "15000", "-y", "0", "-x"]
@@ -85,8 +91,8 @@ class InterfaceState(Enum):
 # 3.9V => not charging, 100%
 # 3.2V => will die in 10 mins under load, shut down
 # 3.3V => warning icon?
-
-adc = Adafruit_ADS1x15.ADS1015()
+ads = ADS.ADS1015(i2c, address=0x48)
+adc = AnalogIn(ads, ADS.P0)
 # Choose a gain of 1 for reading voltages from 0 to 4.09V.
 # Or pick a different gain to change the range of voltages that are read:
 #  - 2/3 = +/-6.144V
@@ -199,8 +205,8 @@ def environment():
 
 def battery():
   global shutdownWarning, battery_level, overlay_processes, battery_history
-  value = adc.read_adc(0, gain=2/3)
-  value_v = (value * 0.003) * vscale
+  value = adc.voltage
+  value_v = adc.voltage #(value * 0.003) * vscale
 
   battery_history.append(value_v)
   try:
